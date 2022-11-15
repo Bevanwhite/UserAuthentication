@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -9,6 +10,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using UserAuthentication.Authentication;
+using Microsoft.EntityFrameworkCore.SqlServer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 namespace UserAuthentication
 {
@@ -25,6 +32,36 @@ namespace UserAuthentication
 		public void ConfigureServices(IServiceCollection services)
 		{
 			services.AddControllers();
+			// Entity Framework
+			services.AddDbContext<ApplicationDbContext>(option => option.UseSqlServer
+			(Configuration.GetConnectionString("ConnectionString")));
+
+			// For Identity
+			services.AddIdentity<ApplicationUser, IdentityRole>()
+				.AddEntityFrameworkStores<ApplicationDbContext>()
+				.AddDefaultTokenProviders();
+
+			// Adding Authentication
+			services.AddAuthentication(option => {
+				option.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+				option.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+				option.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+			})
+
+			// adding jwt Bearer
+			.AddJwtBearer(options => 
+			{
+				options.SaveToken = true;
+				options.RequireHttpsMetadata = false;
+				options.TokenValidationParameters = new TokenValidationParameters()
+				{
+					ValidateIssuer = true,
+					ValidateAudience = true,
+					ValidAudience = Configuration["JWT:ValidAudience"],
+					ValidIssuer = Configuration["JWT:ValidIssuer"],
+					IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT: Signingkey"]))
+				};
+			});
 		}
 
 		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
