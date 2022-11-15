@@ -29,7 +29,7 @@ namespace UserAuthentication.Controllers
 		{
 			var userExist = await userManager.FindByNameAsync(model.UserName);
 
-			if (userExist == null)
+			if (userExist != null)
 				return StatusCode(StatusCodes.Status500InternalServerError, new Response
 				{
 					Status = "Error",
